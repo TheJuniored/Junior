@@ -2,6 +2,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include "err.h"
+#include "string.h"
 //#include "main.h"
 /*
  * try to display each step
@@ -132,6 +133,7 @@ void adaptative_threshold(SDL_Surface *surface) {
         }
     }
     SDL_UnlockSurface(surface);//unlock the surface because we have finished to work on it
+    free(copy);
 }
 
 //accentuates the shape
@@ -307,24 +309,28 @@ void rotate(SDL_Surface* surface, double angle) {
 }*/
 
 int main(int argc, char *argv[]) {
-    if (argc != 2)
+    if (argc != 3)
         errx(EXIT_FAILURE, "Usage: %s image", argv[0]);
 
     SDL_Surface *image = load_image(argv[1]);
+    char *filename = argv[2];
 
     SDL_LockSurface(image);
-
     surface_to_grayscale(image);
+    IMG_SavePNG(image,"/home/maxime.cambou/afs/SPE/sudoku-solver/image/grayscale.png");
     adaptative_threshold(image);
+    IMG_SavePNG(image, "/home/maxime.cambou/afs/SPE/sudoku-solver/image/threshold.png");
     //dilatation(image);
+    //IMG_SavePNG(image, "/home/maxime.cambou/afs/SPE/sudoku-solver/dilatation.png");
     invert(image);
-    SDL_Surface* copy = SDL_ConvertSurfaceFormat(image, SDL_PIXELFORMAT_RGBA8888, 0);
+    IMG_SavePNG(image, "/home/maxime.cambou/afs/SPE/sudoku-solver/image/invert.png");
+    SDL_Surface *copy = SDL_ConvertSurfaceFormat(image, SDL_PIXELFORMAT_RGBA8888, 0);
     size_t x = 0;
     size_t y = 0;
     int mini = 0;
     int tmp = 0;
-    for (size_t i = 0; i < (size_t)copy->h; i++) {
-        for (size_t j = 0; j < (size_t)copy->w; j++) {
+    for (size_t i = 0; i < (size_t) copy->h; i++) {
+        for (size_t j = 0; j < (size_t) copy->w; j++) {
             tmp = flood_fill(copy, j, i, SDL_MapRGB(copy->format, 0, 255, 0));
             if (tmp > mini) {
                 mini = tmp;
@@ -334,18 +340,17 @@ int main(int argc, char *argv[]) {
         }
     }
     //flood_fill(image, x, y, SDL_MapRGB(image->format, 0, 255, 0));
-    SDL_Surface* copy2 = SDL_ConvertSurfaceFormat(image, SDL_PIXELFORMAT_RGBA8888, 0);
-    for (size_t i = 0; i < (size_t)(copy2->h * copy->w); i++)
-        ((Uint32*)copy2->pixels)[i] = SDL_MapRGB(copy2->format, 0, 0, 0);
-    get_grid(image, copy2, x, y, SDL_MapRGB(copy2->format, 0, 255, 0));
-    //hough(copy2);
-    //rotate(copy2, 0.25);
+    SDL_Surface* copy_ = SDL_ConvertSurfaceFormat(image, SDL_PIXELFORMAT_RGBA8888, 0);
+    for (size_t i = 0; i < (size_t)(copy_->h * copy->w); i++)
+        ((Uint32*)copy_->pixels)[i] = SDL_MapRGB(copy_->format, 0, 0, 0);
+    get_grid(image, copy_, x, y, SDL_MapRGB(copy_->format, 0, 255, 0));
     SDL_UnlockSurface(image);
-    IMG_SavePNG(copy2, "/Users/maxime/Desktop/sudoku-solver/image/output.png");
+    IMG_SavePNG(copy_, filename);
     SDL_FreeSurface(image);
     SDL_FreeSurface(copy);
-    SDL_FreeSurface(copy2);
-    //SDL_DestroyWindow(window);
-    SDL_Quit();
+    SDL_FreeSurface(copy_);
+
+    //hough(copy2);
+    //rotate(copy2, 0.25);
     return EXIT_SUCCESS;
 }
